@@ -33,11 +33,17 @@ import numpy as np
 import pytest
 from mpi4py import MPI
 
-from nek5000reader import (Nek5000Reader, build_connectivity,
-                           build_step_filename, parse_nek5000_control,
-                           parse_var_tags, partition_blocks,
-                           read_basic_header_and_endian, read_block_ids,
-                           read_time_and_tags)
+from nek5000reader import (
+    Nek5000Reader,
+    build_connectivity,
+    build_step_filename,
+    parse_nek5000_control,
+    parse_var_tags,
+    partition_blocks,
+    read_basic_header_and_endian,
+    read_block_ids,
+    read_time_and_tags,
+)
 from nek5000reader.utils import last_int_in_string, peek, read_ascii_token
 
 if MPI.COMM_WORLD.Get_size() == 1:
