@@ -113,7 +113,7 @@ jobs:
     
     - name: Check import sorting with isort
       run: |
-        isort --check-only nek5000reader tests
+        isort --check-only --profile black nek5000reader tests
     
     - name: Lint with flake8
       run: |
