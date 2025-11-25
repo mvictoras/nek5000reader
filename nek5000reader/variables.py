@@ -32,6 +32,7 @@ Functions for reading variable data from Nek5000 files.
 """
 
 from typing import Dict, List
+
 import numpy as np
 
 from .header import total_header_size_bytes

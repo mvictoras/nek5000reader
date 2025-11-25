@@ -33,10 +33,12 @@ Functions for reading Nek5000 file headers and metadata.
 
 import os
 import struct
-from typing import Tuple, Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 
-from .utils import read_ascii_token, peek, skip_spaces, skip_digits, last_int_in_string
+from .utils import (last_int_in_string, peek, read_ascii_token, skip_digits,
+                    skip_spaces)
 
 
 def parse_nek5000_control(path: str) -> Dict:
