@@ -14,7 +14,7 @@
 # 3. Neither the name of the copyright holder nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -37,22 +37,24 @@ import numpy as np
 from .header import total_header_size_bytes
 
 
-def read_variables_for_my_blocks(dfname: str,
-                                 var_names: List[str],
-                                 var_lens: List[int],
-                                 my_block_positions: np.ndarray,
-                                 totalBlockSize: int,
-                                 mesh_is_3d: bool,
-                                 precision: int,
-                                 swapEndian: bool,
-                                 has_mesh: bool,
-                                 numBlocks_global: int) -> Dict[str, np.ndarray]:
+def read_variables_for_my_blocks(
+    dfname: str,
+    var_names: List[str],
+    var_lens: List[int],
+    my_block_positions: np.ndarray,
+    totalBlockSize: int,
+    mesh_is_3d: bool,
+    precision: int,
+    swapEndian: bool,
+    has_mesh: bool,
+    numBlocks_global: int,
+) -> Dict[str, np.ndarray]:
     """
     Faster: use a single np.memmap per variable plane and gather all my blocks at once.
     - Endianness handled by dtype ('<' or '>').
     - 2D Velocity reads Vx,Vy from file and fills Vz=0.
     - Always returns float32 arrays.
-    
+
     Args:
         dfname: Path to Nek5000 data file
         var_names: List of variable names
@@ -64,16 +66,17 @@ def read_variables_for_my_blocks(dfname: str,
         swapEndian: Whether to swap byte order
         has_mesh: Whether mesh data is present
         numBlocks_global: Total number of blocks in file
-        
+
     Returns:
         Dictionary mapping variable names to numpy arrays
     """
     result: Dict[str, np.ndarray] = {}
 
-    comps_vel_in_file = 3 if mesh_is_3d else 2             # what the file actually stores for U
+    comps_vel_in_file = 3 if mesh_is_3d else 2  # what the file actually stores for U
     comps_xyz = 3 if mesh_is_3d else 2
-    header_bytes = total_header_size_bytes(numBlocks_global, totalBlockSize,
-                                           comps_xyz, precision, has_mesh)
+    header_bytes = total_header_size_bytes(
+        numBlocks_global, totalBlockSize, comps_xyz, precision, has_mesh
+    )
 
     # One scalar "plane" across *all* blocks in bytes
     plane_bytes = numBlocks_global * totalBlockSize * precision
@@ -89,7 +92,7 @@ def read_variables_for_my_blocks(dfname: str,
     # Velocity contributes `comps_vel_in_file` planes; each scalar (P, T, S##) contributes 1 plane.
     planes_before = 0
 
-    need_vel_mag = ("Velocity Magnitude" in var_names)
+    need_vel_mag = "Velocity Magnitude" in var_names
     have_velocity = False
     vel_flat = None  # will hold [Vx...][Vy...][Vz...]
 
@@ -107,23 +110,39 @@ def read_variables_for_my_blocks(dfname: str,
             # Map the contiguous velocity region (all blocks) as one 2D array
             offset = header_bytes + planes_before * plane_bytes
             # shape = (numBlocks_global, totalBlockSize * comps_vel_in_file)
-            mm = np.memmap(dfname, dtype=dt, mode="r",
-                           offset=offset,
-                           shape=(numBlocks_global, totalBlockSize * comps_vel_in_file))
+            mm = np.memmap(
+                dfname,
+                dtype=dt,
+                mode="r",
+                offset=offset,
+                shape=(numBlocks_global, totalBlockSize * comps_vel_in_file),
+            )
 
-            sel = mm[my_block_positions]  # (nblk_local, totalBlockSize*comps_vel_in_file)
+            sel = mm[
+                my_block_positions
+            ]  # (nblk_local, totalBlockSize*comps_vel_in_file)
 
             # Build a flat 3-comp array [Vx...][Vy...][Vz...], always 3 comps in output
             vel_flat = np.empty(nverts * 3, dtype=np.float32)
             # X
-            vel_flat[0*nverts:1*nverts] = sel[:, 0:totalBlockSize].reshape(-1).astype(np.float32, copy=False)
+            vel_flat[0 * nverts : 1 * nverts] = (
+                sel[:, 0:totalBlockSize].reshape(-1).astype(np.float32, copy=False)
+            )
             # Y
-            vel_flat[1*nverts:2*nverts] = sel[:, totalBlockSize:2*totalBlockSize].reshape(-1).astype(np.float32, copy=False)
+            vel_flat[1 * nverts : 2 * nverts] = (
+                sel[:, totalBlockSize : 2 * totalBlockSize]
+                .reshape(-1)
+                .astype(np.float32, copy=False)
+            )
             # Z
             if mesh_is_3d:
-                vel_flat[2*nverts:3*nverts] = sel[:, 2*totalBlockSize:3*totalBlockSize].reshape(-1).astype(np.float32, copy=False)
+                vel_flat[2 * nverts : 3 * nverts] = (
+                    sel[:, 2 * totalBlockSize : 3 * totalBlockSize]
+                    .reshape(-1)
+                    .astype(np.float32, copy=False)
+                )
             else:
-                vel_flat[2*nverts:3*nverts] = 0.0
+                vel_flat[2 * nverts : 3 * nverts] = 0.0
 
             result["Velocity"] = vel_flat  # already flat
             have_velocity = True
@@ -134,9 +153,13 @@ def read_variables_for_my_blocks(dfname: str,
 
         # Scalar variable (P, T, S##, etc.)
         offset = header_bytes + planes_before * plane_bytes
-        mm = np.memmap(dfname, dtype=dt, mode="r",
-                       offset=offset,
-                       shape=(numBlocks_global, totalBlockSize))
+        mm = np.memmap(
+            dfname,
+            dtype=dt,
+            mode="r",
+            offset=offset,
+            shape=(numBlocks_global, totalBlockSize),
+        )
 
         sel = mm[my_block_positions]  # (nblk_local, totalBlockSize)
         result[name] = sel.reshape(-1).astype(np.float32, copy=False)
@@ -147,10 +170,14 @@ def read_variables_for_my_blocks(dfname: str,
     # Compute Velocity Magnitude if requested
     if need_vel_mag:
         if not have_velocity:
-            raise RuntimeError("Requested 'Velocity Magnitude' but 'Velocity' was not present.")
-        vx = vel_flat[0*nverts:1*nverts]
-        vy = vel_flat[1*nverts:2*nverts]
-        vz = vel_flat[2*nverts:3*nverts]
-        result["Velocity Magnitude"] = np.sqrt(vx*vx + vy*vy + vz*vz, dtype=np.float32)
+            raise RuntimeError(
+                "Requested 'Velocity Magnitude' but 'Velocity' was not present."
+            )
+        vx = vel_flat[0 * nverts : 1 * nverts]
+        vy = vel_flat[1 * nverts : 2 * nverts]
+        vz = vel_flat[2 * nverts : 3 * nverts]
+        result["Velocity Magnitude"] = np.sqrt(
+            vx * vx + vy * vy + vz * vz, dtype=np.float32
+        )
 
     return result

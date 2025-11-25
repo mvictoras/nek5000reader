@@ -14,7 +14,7 @@
 # 3. Neither the name of the copyright holder nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -45,10 +45,10 @@ def parse_nek5000_control(path: str) -> Dict:
       filetemplate: printf-style template (e.g., prefix%05d.fld)
       firsttimestep: int
       numtimesteps: int
-      
+
     Args:
         path: Path to .nek5000 control file
-        
+
     Returns:
         Dictionary with filetemplate, firsttimestep, and numtimesteps
     """
@@ -76,15 +76,17 @@ def parse_nek5000_control(path: str) -> Dict:
     return out
 
 
-def read_basic_header_and_endian(dfname: str) -> Tuple[int, Tuple[int,int,int], int, bool]:
+def read_basic_header_and_endian(
+    dfname: str,
+) -> Tuple[int, Tuple[int, int, int], int, bool]:
     """
     Reads the initial ASCII header (#std, precision, blockDims, ..., numBlocks),
     probes endian using the float at offset 132, and returns:
       precision_bytes (4 or 8), (nx, ny, nz), numBlocks, swapEndian(bool)
-      
+
     Args:
         dfname: Path to Nek5000 data file
-        
+
     Returns:
         Tuple of (precision_bytes, (nx, ny, nz), numBlocks, swapEndian)
     """
@@ -107,8 +109,11 @@ def read_basic_header_and_endian(dfname: str) -> Tuple[int, Tuple[int,int,int], 
             raise RuntimeError("Could not read endian probe.")
         test_le = struct.unpack("<f", b)[0]
         test_be = struct.unpack(">f", b)[0]
+
         # VTK checks ~6.5..6.6
-        def ok(v): return 6.5 < v < 6.6
+        def ok(v):
+            return 6.5 < v < 6.6
+
         if ok(test_le):
             swap = False  # file little-endian matches our unpack
         elif ok(test_be):
@@ -123,10 +128,10 @@ def read_time_and_tags(dfname: str) -> Tuple[float, int, str, bool]:
     """
     Reads (time, cycle, tags_string, has_mesh) from the ASCII/tag section.
     Falls back to parsing the step from the filename if cycle == 0.
-    
+
     Args:
         dfname: Path to Nek5000 data file
-        
+
     Returns:
         Tuple of (time, cycle, tags_string, has_mesh)
     """
@@ -142,7 +147,7 @@ def read_time_and_tags(dfname: str) -> Tuple[float, int, str, bool]:
         skip_digits(f)
         tags = f.read(32)
         tags = (tags or b"").decode("ascii", errors="ignore")
-        has_mesh = ("X" in tags)
+        has_mesh = "X" in tags
 
         # parse
         t = float(t_str) if t_str and any(ch.isdigit() for ch in t_str) else 0.0
@@ -162,11 +167,11 @@ def parse_var_tags(tags: str, mesh_is_3d: bool) -> Tuple[List[str], List[int]]:
     """
     From the tags string, produce var_names and component counts.
     Adds "Velocity Magnitude" right after "Velocity" to mirror VTK.
-    
+
     Args:
         tags: Tags string from file header
         mesh_is_3d: Whether mesh is 3D
-        
+
     Returns:
         Tuple of (variable_names, component_counts)
     """
@@ -179,7 +184,7 @@ def parse_var_tags(tags: str, mesh_is_3d: bool) -> Tuple[List[str], List[int]]:
         # We scan the next two chars that look like digits:
         idx = tags.find("S")
         if idx >= 0 and idx + 2 < len(tags):
-            d = "".join([c for c in tags[idx+1:idx+3] if c.isdigit()])
+            d = "".join([c for c in tags[idx + 1 : idx + 3] if c.isdigit()])
             s_count = int(d) if len(d) == 2 else 1
         else:
             s_count = 1
@@ -207,12 +212,12 @@ def parse_var_tags(tags: str, mesh_is_3d: bool) -> Tuple[List[str], List[int]]:
 def read_block_ids(dfname: str, numBlocks: int, swapEndian: bool) -> np.ndarray:
     """
     Read block IDs from file.
-    
+
     Args:
         dfname: Path to Nek5000 data file
         numBlocks: Number of blocks
         swapEndian: Whether to swap byte order
-        
+
     Returns:
         Array of block IDs
     """
@@ -231,10 +236,10 @@ def read_map_file(nekfile: str) -> Optional[np.ndarray]:
     If a .map file exists alongside the .nek5000, read its element order.
     File format: first int: num_map_elements, followed by per-line entries
     where the first numeric field is the element id (0-based) -> +1 like VTK.
-    
+
     Args:
         nekfile: Path to .nek5000 file
-        
+
     Returns:
         Array of element IDs, or None if no map file exists
     """
@@ -269,18 +274,19 @@ def read_map_file(nekfile: str) -> Optional[np.ndarray]:
     return np.array(ids, dtype=np.int32)
 
 
-def total_header_size_bytes(numBlocks: int, totalBlockSize: int, comps_xyz: int, 
-                            precision: int, has_mesh: bool) -> int:
+def total_header_size_bytes(
+    numBlocks: int, totalBlockSize: int, comps_xyz: int, precision: int, has_mesh: bool
+) -> int:
     """
     Calculate total header size in bytes.
-    
+
     Args:
         numBlocks: Number of blocks
         totalBlockSize: Size of each block
         comps_xyz: Number of coordinate components
         precision: Precision in bytes (4 or 8)
         has_mesh: Whether mesh data is present
-        
+
     Returns:
         Header size in bytes
     """

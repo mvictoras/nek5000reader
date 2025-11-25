@@ -14,7 +14,7 @@
 # 3. Neither the name of the copyright holder nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -47,29 +47,32 @@ from nek5000reader.utils import last_int_in_string, read_ascii_token, peek
 if MPI.COMM_WORLD.Get_size() == 1:
     pytest.skip("MPI tests must be run with mpiexec -n N", allow_module_level=True)
 
+
 @pytest.fixture
 def data_dir():
-    return os.path.join(os.path.dirname(__file__), '../data')
+    return os.path.join(os.path.dirname(__file__), "../data")
 
 
 @pytest.fixture
 def stsabl_file(data_dir):
-    return os.path.join(data_dir, 'stsabl.nek5000')
+    return os.path.join(data_dir, "stsabl.nek5000")
 
 
 @pytest.fixture
 def case_file(data_dir):
-    return os.path.join(data_dir, 'stsabl.nek5000')
+    return os.path.join(data_dir, "stsabl.nek5000")
+
 
 # ============================================================================
 # MPI PARALLEL TESTS
 # ============================================================================
 
+
 def test_mpi_initialization(stsabl_file):
     """Test MPI-aware initialization"""
     comm = MPI.COMM_WORLD
     reader = Nek5000Reader(stsabl_file, comm=comm)
-    
+
     assert reader.rank == comm.Get_rank()
     assert reader.size == comm.Get_size()
 
@@ -78,15 +81,15 @@ def test_mpi_block_distribution(stsabl_file):
     """Test that blocks are distributed across MPI ranks"""
     comm = MPI.COMM_WORLD
     reader = Nek5000Reader(stsabl_file, comm=comm)
-    
+
     # Each rank should have some blocks (or none if more ranks than blocks)
     info = reader.get_info()
-    total_blocks = info['num_blocks']
-    
+    total_blocks = info["num_blocks"]
+
     # Sum up blocks across all ranks
-    local_blocks = info['blocks_this_rank'] if 'blocks_this_rank' in info else 0
+    local_blocks = info["blocks_this_rank"] if "blocks_this_rank" in info else 0
     all_blocks = comm.allreduce(local_blocks, op=MPI.SUM)
-    
+
     # Total should equal original
     assert all_blocks == total_blocks
 
@@ -95,24 +98,25 @@ def test_mpi_parallel_read(stsabl_file):
     """Test parallel reading with MPI"""
     comm = MPI.COMM_WORLD
     reader = Nek5000Reader(stsabl_file, comm=comm)
-    
+
     data = reader.read_timestep(0)
-    
+
     # Each rank should have valid data
-    assert 'coordinates' in data
-    assert 'fields' in data
-    
+    assert "coordinates" in data
+    assert "fields" in data
+
     # Verify data is not empty (unless rank has no blocks)
-    if data['coordinates'] is not None:
-        assert data['coordinates'].shape[0] > 0
+    if data["coordinates"] is not None:
+        assert data["coordinates"].shape[0] > 0
+
 
 def test_partition_blocks_even():
     """Test block partitioning with even distribution"""
     comm = MPI.COMM_WORLD
     num_blocks = 100
-    
+
     counts, displs = partition_blocks(num_blocks, comm)
-    
+
     assert isinstance(counts, np.ndarray)
     assert isinstance(displs, np.ndarray)
     assert counts.dtype == np.int32
@@ -126,13 +130,13 @@ def test_partition_blocks_uneven():
     """Test block partitioning with uneven distribution"""
     comm = MPI.COMM_WORLD
     num_blocks = 10
-    
+
     counts, displs = partition_blocks(num_blocks, comm)
-    
+
     assert np.sum(counts) == num_blocks
     assert displs[0] == 0
-    
+
     # Verify displacements are cumulative
     if comm.Get_size() > 1:
         for i in range(1, len(displs)):
-            assert displs[i] == displs[i-1] + counts[i-1]
+            assert displs[i] == displs[i - 1] + counts[i - 1]

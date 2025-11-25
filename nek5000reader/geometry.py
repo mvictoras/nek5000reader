@@ -14,7 +14,7 @@
 # 3. Neither the name of the copyright holder nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -35,16 +35,18 @@ from typing import Tuple
 import numpy as np
 
 
-def read_coords_for_my_blocks(dfname: str,
-                              my_block_positions: np.ndarray,
-                              totalBlockSize: int,
-                              mesh_is_3d: bool,
-                              precision: int,
-                              swapEndian: bool,
-                              numBlocks_global: int) -> np.ndarray:
+def read_coords_for_my_blocks(
+    dfname: str,
+    my_block_positions: np.ndarray,
+    totalBlockSize: int,
+    mesh_is_3d: bool,
+    precision: int,
+    swapEndian: bool,
+    numBlocks_global: int,
+) -> np.ndarray:
     """
     Fast path: map the entire coords region once, then gather in one shot.
-    
+
     Args:
         dfname: Path to Nek5000 data file
         my_block_positions: Array of block positions to read
@@ -53,7 +55,7 @@ def read_coords_for_my_blocks(dfname: str,
         precision: Precision in bytes (4 or 8)
         swapEndian: Whether to swap byte order
         numBlocks_global: Total number of blocks in file
-        
+
     Returns:
         Array of coordinates with shape (num_vertices, 3)
     """
@@ -73,8 +75,13 @@ def read_coords_for_my_blocks(dfname: str,
     dt = np.dtype(endian + ("f4" if precision == 4 else "f8"))
 
     # Map the full coordinates region as a 2D array: (numBlocks_global, stride_elems)
-    mm = np.memmap(dfname, dtype=dt, mode="r",
-                   offset=header_bytes, shape=(numBlocks_global, stride_elems))
+    mm = np.memmap(
+        dfname,
+        dtype=dt,
+        mode="r",
+        offset=header_bytes,
+        shape=(numBlocks_global, stride_elems),
+    )
 
     # Vectorized gather of all my blocks (creates a dense ndarray)
     sel = mm[my_block_positions]  # shape: (nblk_local, stride_elems)
@@ -82,10 +89,10 @@ def read_coords_for_my_blocks(dfname: str,
     # De-interleave into X/Y/Z in a single pass
     # Reshape output for clean slicing [block, point, coord]
     out3 = out.reshape(nblk_local, totalBlockSize, 3)
-    out3[:, :, 0] = sel[:, 0:totalBlockSize]                       # X
-    out3[:, :, 1] = sel[:, totalBlockSize:2*totalBlockSize]        # Y
+    out3[:, :, 0] = sel[:, 0:totalBlockSize]  # X
+    out3[:, :, 1] = sel[:, totalBlockSize : 2 * totalBlockSize]  # Y
     if mesh_is_3d:
-        out3[:, :, 2] = sel[:, 2*totalBlockSize:3*totalBlockSize]  # Z
+        out3[:, :, 2] = sel[:, 2 * totalBlockSize : 3 * totalBlockSize]  # Z
     else:
         out3[:, :, 2].fill(0.0)
 
@@ -94,21 +101,23 @@ def read_coords_for_my_blocks(dfname: str,
     return out
 
 
-def build_connectivity(blockDims: Tuple[int,int,int],
-                       myNumBlocks: int,
-                       totalBlockSize: int,
-                       mesh_is_3d: bool) -> np.ndarray:
+def build_connectivity(
+    blockDims: Tuple[int, int, int],
+    myNumBlocks: int,
+    totalBlockSize: int,
+    mesh_is_3d: bool,
+) -> np.ndarray:
     """
     Vectorized connectivity builder.
     - Builds one block's connectivity with NumPy.
     - Broadcast-adds a per-block vertex offset (totalBlockSize) and tiles across myNumBlocks.
-    
+
     Args:
         blockDims: Tuple of (nx, ny, nz) dimensions
         myNumBlocks: Number of blocks for this rank
         totalBlockSize: Size of each block
         mesh_is_3d: Whether mesh is 3D
-        
+
     Returns:
         1D int64 array suitable for Conduit Blueprint 'connectivity'
     """
@@ -142,7 +151,9 @@ def build_connectivity(blockDims: Tuple[int,int,int],
         )  # (cells_per_block, 8)
 
         # Tile to all my blocks with vertex offsets
-        offsets = (np.arange(myNumBlocks, dtype=np.int64) * pts_per_block)[:, None, None]
+        offsets = (np.arange(myNumBlocks, dtype=np.int64) * pts_per_block)[
+            :, None, None
+        ]
         conn = conn_block[None, :, :] + offsets  # (myNumBlocks, cells_per_block, 8)
         return conn.reshape(-1)
 
@@ -160,6 +171,8 @@ def build_connectivity(blockDims: Tuple[int,int,int],
             [base, base + 1, base + nx + 1, base + nx], axis=1
         )  # (cells_per_block, 4)
 
-        offsets = (np.arange(myNumBlocks, dtype=np.int64) * pts_per_block)[:, None, None]
+        offsets = (np.arange(myNumBlocks, dtype=np.int64) * pts_per_block)[
+            :, None, None
+        ]
         conn = conn_block[None, :, :] + offsets  # (myNumBlocks, cells_per_block, 4)
         return conn.reshape(-1)

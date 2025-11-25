@@ -14,7 +14,7 @@
 # 3. Neither the name of the copyright holder nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -44,12 +44,12 @@ def build_step_filename(fmt: str, step: int, dir_index: int = 0) -> str:
       e.g. "data%05d.fld"            -> fmt % step
             "turbPipe%01d.f%05d"     -> fmt % (dir_index, step)  (VTK passes 0 for dir_index)
     Falls back to simple concatenation if there are no specifiers.
-    
+
     Args:
         fmt: Printf-style format string
         step: Timestep number
         dir_index: Directory index (default: 0)
-        
+
     Returns:
         Formatted filename string
     """
@@ -72,18 +72,20 @@ def build_step_filename(fmt: str, step: int, dir_index: int = 0) -> str:
 def partition_blocks(numBlocks: int, comm: MPI.Comm) -> Tuple[np.ndarray, np.ndarray]:
     """
     Return (counts_per_rank, displs) for an even partition of elements.
-    
+
     Args:
         numBlocks: Total number of blocks to partition
         comm: MPI communicator
-        
+
     Returns:
         Tuple of (counts_per_rank, displacements) as numpy arrays
     """
     size = comm.Get_size()
     base = numBlocks // size
     rem = numBlocks % size
-    counts = np.array([base + (1 if r < rem else 0) for r in range(size)], dtype=np.int32)
+    counts = np.array(
+        [base + (1 if r < rem else 0) for r in range(size)], dtype=np.int32
+    )
     displs = np.zeros(size, dtype=np.int32)
     if size > 1:
         displs[1:] = np.cumsum(counts[:-1])
@@ -93,24 +95,24 @@ def partition_blocks(numBlocks: int, comm: MPI.Comm) -> Tuple[np.ndarray, np.nda
 def last_int_in_string(s: str) -> Optional[int]:
     """
     Extract the last integer found in a string.
-    
+
     Args:
         s: Input string
-        
+
     Returns:
         Last integer found, or None if no integers present
     """
-    m = re.findall(r'(\d+)', s)
+    m = re.findall(r"(\d+)", s)
     return int(m[-1]) if m else None
 
 
 def read_ascii_token(f) -> str:
     """
     Read a whitespace-delimited ASCII token from a binary file.
-    
+
     Args:
         f: File object opened in binary mode
-        
+
     Returns:
         Decoded ASCII token string
     """
@@ -132,10 +134,10 @@ def read_ascii_token(f) -> str:
 def peek(f) -> int:
     """
     Peek at the next byte without advancing file position.
-    
+
     Args:
         f: File object opened in binary mode
-        
+
     Returns:
         Next byte value, or -1 if at EOF
     """
@@ -148,7 +150,7 @@ def peek(f) -> int:
 def skip_spaces(f):
     """Skip whitespace characters in binary file."""
     b = peek(f)
-    while b == ord(' '):
+    while b == ord(" "):
         f.read(1)
         b = peek(f)
 
@@ -156,6 +158,6 @@ def skip_spaces(f):
 def skip_digits(f):
     """Skip digit characters in binary file."""
     b = peek(f)
-    while b >= ord('0') and b <= ord('9'):
+    while b >= ord("0") and b <= ord("9"):
         f.read(1)
         b = peek(f)
