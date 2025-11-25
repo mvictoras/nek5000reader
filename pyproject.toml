@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "MIT"}
 authors = [
-    {name = "User", email = "user@example.com"}
+    {name = "Victor Mateevitsi", email = "victor@mateevitsi.com"}
 ]
 dependencies = [
     "numpy",
@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/example/nek5000reader"
+Homepage = "https://github.com/mvictoras/nek5000reader"
 
 [tool.setuptools.packages.find]
 where = ["."]
