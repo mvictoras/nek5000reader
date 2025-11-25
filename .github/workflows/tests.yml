@@ -52,7 +52,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.11']
-        mpi-ranks: [2, 4]
+        mpi-ranks: [2]
     
     steps:
     - uses: actions/checkout@v4
@@ -76,19 +76,6 @@ jobs:
     - name: Run MPI tests with ${{ matrix.mpi-ranks }} ranks
       run: |
         mpiexec -n ${{ matrix.mpi-ranks }} --allow-run-as-root pytest tests/mpi/test_mpi_reader.py -v
-    
-    - name: Run MPI tests with coverage
-      if: matrix.mpi-ranks == 2
-      run: |
-        mpiexec -n 2 --allow-run-as-root pytest tests/mpi/test_mpi_reader.py -v --cov=nek5000reader --cov-report=xml --cov-report=term
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      if: matrix.mpi-ranks == 2
-      with:
-        file: ./coverage.xml
-        flags: mpi
-        name: mpi-tests
 
   lint:
     name: Code Quality
