@@ -20,7 +20,7 @@ Supports both serial and MPI-parallel reading with optimized memory-mapped I/O.
 
 ## Installation
 
-### From PyPI (when published)
+### From PyPI
 
 ```bash
 pip install nek5000reader
