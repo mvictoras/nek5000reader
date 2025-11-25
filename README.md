@@ -214,3 +214,8 @@ If you use this library in your research, please cite:
 
 This library was developed for efficient post-processing of Nek5000 CFD simulations.
 
+### Test Data
+
+Test data files in `tests/data/` are from the [pymech-test-data](https://github.com/eX-Mech/pymech-test-data) repository (GPL-3.0 licensed). See `tests/data/ATTRIBUTION.md` for details.
+
+
