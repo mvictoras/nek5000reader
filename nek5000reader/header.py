@@ -37,8 +37,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from .utils import (last_int_in_string, peek, read_ascii_token, skip_digits,
-                    skip_spaces)
+from .utils import last_int_in_string, read_ascii_token, skip_digits, skip_spaces
 
 
 def parse_nek5000_control(path: str) -> Dict:

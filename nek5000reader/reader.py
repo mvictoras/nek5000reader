@@ -31,7 +31,7 @@
 Main Nek5000Reader class for high-level file reading.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 from mpi4py import MPI

@@ -1,0 +1,17 @@
+[flake8]
+max-line-length = 127
+extend-ignore = E203, W503
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    .eggs,
+    *.egg-info,
+    venv,
+    env,
+    .tox
+per-file-ignores =
+    __init__.py:F401
+    tests/test_reader.py:F401
+    tests/mpi/test_mpi_reader.py:F401

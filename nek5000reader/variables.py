@@ -100,7 +100,7 @@ def read_variables_for_my_blocks(
     i = 0
     while i < len(var_names):
         name = var_names[i]
-        ncomp = var_lens[i]
+        _ncomp = var_lens[i]  # noqa: F841
 
         if name == "Velocity Magnitude":
             # We'll compute it after we read Velocity

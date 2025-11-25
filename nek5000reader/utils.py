@@ -31,7 +31,6 @@
 Utility functions for Nek5000 file handling.
 """
 
-import os
 import re
 from typing import Optional, Tuple
 
