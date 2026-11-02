@@ -32,10 +32,12 @@ Utility functions for Nek5000 file handling.
 """
 
 import re
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
-from mpi4py import MPI
+
+if TYPE_CHECKING:
+    from mpi4py import MPI
 
 
 def build_step_filename(fmt: str, step: int, dir_index: int = 0) -> str:
@@ -69,7 +71,7 @@ def build_step_filename(fmt: str, step: int, dir_index: int = 0) -> str:
         ) from e
 
 
-def partition_blocks(numBlocks: int, comm: MPI.Comm) -> Tuple[np.ndarray, np.ndarray]:
+def partition_blocks(numBlocks: int, comm: "MPI.Comm") -> Tuple[np.ndarray, np.ndarray]:
     """
     Return (counts_per_rank, displs) for an even partition of elements.
 

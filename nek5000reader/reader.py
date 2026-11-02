@@ -31,10 +31,12 @@
 Main Nek5000Reader class for high-level file reading.
 """
 
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import numpy as np
-from mpi4py import MPI
+
+if TYPE_CHECKING:
+    from mpi4py import MPI
 
 from .geometry import build_connectivity, read_coords_for_my_blocks
 from .header import (
@@ -63,7 +65,7 @@ class Nek5000Reader:
         >>> velocity = data['fields']['Velocity']
     """
 
-    def __init__(self, nek5000_file: str, comm: Optional[MPI.Comm] = None):
+    def __init__(self, nek5000_file: str, comm: Optional["MPI.Comm"] = None):
         """
         Initialize the Nek5000 reader.
 
@@ -71,8 +73,15 @@ class Nek5000Reader:
             nek5000_file: Path to .nek5000 control file
             comm: MPI communicator (default: MPI.COMM_WORLD)
         """
+        if comm is None:
+            # Imported lazily so that merely importing nek5000reader does not
+            # load MPI libraries. On systems with mixed MPI builds (e.g.
+            # Aurora), loading mpi4py's MPI extension before other MPI-linked
+            # extension modules can break their library binding.
+            from mpi4py import MPI
+            comm = MPI.COMM_WORLD
         self.nek5000_file = nek5000_file
-        self.comm = comm if comm is not None else MPI.COMM_WORLD
+        self.comm = comm
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
 
